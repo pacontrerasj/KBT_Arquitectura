@@ -1,6 +1,6 @@
 #!/bin/bash
 # FreshBox SpA - Deploy de contenedores vía SSM a las EC2 APP.
-# Ejecutado por GitHub Actions después de que build-ecr.yml pushea las imágenes.
+# Envía cada comando como un elemento separado del array JSON de SSM.
 
 set -euo pipefail
 
@@ -32,55 +32,83 @@ if [ -z "$INSTANCE_IDS" ]; then
 fi
 echo "Instancias encontradas: ${INSTANCE_IDS}"
 
+# Envía comandos SSM y devuelve el CommandId. Los comandos van como
+# elementos independientes del array JSON (parseo correcto de SSM).
 run_ssm() {
   local instance="$1"
   shift
-  local command_id
-  command_id=$(aws ssm send-command \
+  local params_json
+  params_json=$(python3 -c 'import json,sys; print(json.dumps({"commands": sys.argv[1:]}))' "$@")
+  aws ssm send-command \
     --instance-ids "$instance" \
     --document-name "AWS-RunShellScript" \
-    --parameters "commands=$1" \
+    --parameters "$params_json" \
     --query "Command.CommandId" \
-    --output text)
-  echo "$command_id"
+    --output text
+}
+
+wait_status() {
+  local instance="$1"
+  local command_id="$2"
+  local status="Pending"
+  for _ in $(seq 1 20); do
+    status=$(aws ssm get-command-invocation \
+      --command-id "$command_id" \
+      --instance-id "$instance" \
+      --query "Status" --output text 2>/dev/null || echo "Pending")
+    if [ "$status" = "Success" ] || [ "$status" = "Failed" ] || [ "$status" = "Cancelled" ]; then
+      break
+    fi
+    sleep 5
+  done
+  echo "$status"
 }
 
 for INSTANCE_ID in $INSTANCE_IDS; do
   echo "=== Desplegando en $INSTANCE_ID ==="
 
-  run_ssm "$INSTANCE_ID" "[\"aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ECR_BASE}\"]" >/dev/null 2>&1 || true
-  sleep 10
+  # 1. Login ECR (se ignora el resultado, se reintenta abajo)
+  LOGIN_ID=$(run_ssm "$INSTANCE_ID" \
+    "aws ecr get-login-password --region ${REGION} | docker login --username AWS --password-stdin ${ECR_BASE}")
+  wait_status "$INSTANCE_ID" "$LOGIN_ID" >/dev/null || true
 
-  COMMANDS="docker network create --driver bridge freshbox-net 2>/dev/null || true"
+  # 2. Preparar red + contenedores (cada comando es un elemento del array)
+  CMDS=("docker network create --driver bridge freshbox-net 2>/dev/null || true")
 
   for i in "${!SERVICES[@]}"; do
     SVC="${SERVICES[$i]}"
     PORT="${PORTS[$i]}"
     IMAGE="${ECR_BASE}/freshbox-${SVC}:${COMMIT_SHA}"
 
-    COMMANDS="${COMMANDS}\ndocker pull ${IMAGE}"
-    COMMANDS="${COMMANDS}\ndocker stop freshbox-${SVC} 2>/dev/null || true"
-    COMMANDS="${COMMANDS}\ndocker rm freshbox-${SVC} 2>/dev/null || true"
+    CMDS+=("docker pull ${IMAGE}")
+    CMDS+=("docker stop freshbox-${SVC} 2>/dev/null || true")
+    CMDS+=("docker rm freshbox-${SVC} 2>/dev/null || true")
 
     if [ "$SVC" = "frontend" ]; then
-      COMMANDS="${COMMANDS}\ndocker run -d --name freshbox-${SVC} --network freshbox-net --restart unless-stopped -p ${PORT}:80 ${IMAGE}"
+      CMDS+=("docker run -d --name freshbox-${SVC} --network freshbox-net --restart unless-stopped -p ${PORT}:80 ${IMAGE}")
     else
-      COMMANDS="${COMMANDS}\ndocker run -d --name freshbox-${SVC} --network freshbox-net --network-alias ${SVC} --restart unless-stopped --env-file ${DB_ENV_FILE} -p ${PORT}:${PORT} ${IMAGE}"
+      CMDS+=("docker run -d --name freshbox-${SVC} --network freshbox-net --network-alias ${SVC} --restart unless-stopped --env-file ${DB_ENV_FILE} -p ${PORT}:${PORT} ${IMAGE}")
     fi
   done
 
-  COMMANDS="${COMMANDS}\ndocker ps"
+  CMDS+=("docker ps")
 
-  COMMAND_ID=$(run_ssm "$INSTANCE_ID" "[\"$(printf '%s' "$COMMANDS" | sed 's/"/\\"/g')\"]")
-  echo "SSM Command $COMMAND_ID enviado a $INSTANCE_ID"
-
-  sleep 15
-  STATUS=$(aws ssm get-command-invocation \
-    --command-id "$COMMAND_ID" \
-    --instance-id "$INSTANCE_ID" \
-    --query "Status" \
-    --output text 2>/dev/null || echo "timeout")
+  DEPLOY_ID=$(run_ssm "$INSTANCE_ID" "${CMDS[@]}")
+  STATUS=$(wait_status "$INSTANCE_ID" "$DEPLOY_ID")
   echo "Estado del deploy en $INSTANCE_ID: $STATUS"
+
+  # Imprimir salida real del comando para diagnóstico
+  echo "--- Salida de docker ps ---"
+  aws ssm get-command-invocation \
+    --command-id "$DEPLOY_ID" \
+    --instance-id "$INSTANCE_ID" \
+    --query "StandardOutputContent" --output text 2>/dev/null || true
+
+  echo "--- Errores (si hubo) ---"
+  aws ssm get-command-invocation \
+    --command-id "$DEPLOY_ID" \
+    --instance-id "$INSTANCE_ID" \
+    --query "StandardErrorContent" --output text 2>/dev/null || true
 done
 
 echo "=== Deploy completado ==="
