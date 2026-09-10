@@ -27,10 +27,10 @@ module "security" {
 module "ecr" {
   source = "../../modules/ecr"
 
-  project               = var.project
-  repository_names      = var.ecr_repository_names
-  image_tag_mutability  = "MUTABLE"
-  tags                  = local.common_tags
+  project              = var.project
+  repository_names     = var.ecr_repository_names
+  image_tag_mutability = "MUTABLE"
+  tags                 = local.common_tags
 }
 
 # ── 4. ALB ────────────────────────────────────────────────────────

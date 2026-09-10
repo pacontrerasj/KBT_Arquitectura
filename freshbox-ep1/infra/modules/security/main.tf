@@ -80,10 +80,10 @@ resource "aws_vpc_security_group_ingress_rule" "app_ssm_mgmt" {
 }
 
 resource "aws_vpc_security_group_egress_rule" "app_egress" {
-  security_group_id = aws_security_group.app.id
-  from_port         = 3306
-  to_port           = 3306
-  ip_protocol       = "tcp"
+  security_group_id            = aws_security_group.app.id
+  from_port                    = 3306
+  to_port                      = 3306
+  ip_protocol                  = "tcp"
   referenced_security_group_id = aws_security_group.data.id
   description                  = "Egress MySQL hacia la capa de datos"
 }

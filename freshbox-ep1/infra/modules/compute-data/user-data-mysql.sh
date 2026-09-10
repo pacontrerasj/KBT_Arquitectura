@@ -21,7 +21,11 @@ systemctl start mysqld
 TEMP_PASS=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -1)
 
 # Configurar root y crear usuario/bd
+# MySQL 8 valida passwords por defecto (MEDIUM, >= 8 chars; requiere may/min/num/especial).
+# Se relaja la política (LOW + longitud 7) para el contexto académico y los passwords configurados.
 mysql --connect-expired-password -uroot -p"$${TEMP_PASS}" <<SQL
+SET GLOBAL validate_password.policy = LOW;
+SET GLOBAL validate_password.length = 7;
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${db_root_pass}';
 CREATE DATABASE IF NOT EXISTS ${db_name};
 CREATE USER IF NOT EXISTS '${db_user}'@'%' IDENTIFIED BY '${db_pass}';
@@ -30,8 +34,12 @@ FLUSH PRIVILEGES;
 SQL
 
 # Aplicar esquema + datos (init.sql).
-# NOTA: este script espera el archivo en una ubicación conocida. En el pipeline se
-# sube vía SSM o se incluye en la AMI. Se deja un hook reemplazable.
+# Se descarga desde el repositorio para que la instancia quede auto-inicializada.
+mkdir -p /opt/freshbox
+curl -fsSL -o /opt/freshbox/init.sql \
+  "https://raw.githubusercontent.com/pacontrerasj/KBT_Arquitectura/main/desarrolloappEP1/desarrolloappEP1/init.sql" \
+  || echo "AVISO: no se pudo descargar init.sql desde GitHub"
+
 if [ -f /opt/freshbox/init.sql ]; then
   mysql -u"${db_user}" -p"${db_pass}" ${db_name} < /opt/freshbox/init.sql
   echo "Esquema y datos iniciales aplicados."
