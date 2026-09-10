@@ -62,10 +62,10 @@ output "mysql_instance_id" {
 
 output "backup_vault_arn" {
   description = "ARN del Backup Vault."
-  value       = module.backup.vault_arn
+  value       = try(module.backup[0].vault_arn, "(disabled)")
 }
 
 output "backup_plan_id" {
   description = "ID del Backup Plan."
-  value       = module.backup.plan_id
+  value       = try(module.backup[0].plan_id, "(disabled)")
 }

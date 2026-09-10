@@ -154,6 +154,14 @@ variable "backup_retention_days" {
   default     = 7
 }
 
+# ── Backups del Lab ─────────────────────────────────────────────
+
+variable "enable_backup" {
+  description = "Habilita el módulo de backup. FALSO en el Learner Lab (no permite crear IAM roles)."
+  type        = bool
+  default     = false
+}
+
 # ── Locals ───────────────────────────────────────────────────────
 
 locals {

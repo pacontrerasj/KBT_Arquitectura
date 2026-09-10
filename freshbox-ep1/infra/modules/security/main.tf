@@ -11,7 +11,7 @@ terraform {
 
 resource "aws_security_group" "alb" {
   name        = "${var.project}-sg-alb"
-  description = "Ingreso público 80/443 hacia el ALB."
+  description = "Ingreso publico 80/443 hacia el ALB."
   vpc_id      = var.vpc_id
 
   tags = merge(var.tags, { Name = "${var.project}-sg-alb" })
@@ -41,7 +41,7 @@ resource "aws_vpc_security_group_egress_rule" "alb_egress" {
   to_port                      = 80
   ip_protocol                  = "tcp"
   referenced_security_group_id = aws_security_group.app.id
-  description                  = "Salida hacia las instancias de aplicación"
+  description                  = "Salida hacia las instancias de aplicacion"
 }
 
 resource "aws_security_group" "app" {
@@ -76,7 +76,7 @@ resource "aws_vpc_security_group_ingress_rule" "app_ssm_mgmt" {
   from_port         = 443
   to_port           = 443
   ip_protocol       = "tcp"
-  description       = "SSM/SSM Session Manager de gestión (rango de VPC)"
+  description       = "SSM Session Manager de gestion (rango de VPC)"
 }
 
 resource "aws_vpc_security_group_egress_rule" "app_egress" {
@@ -109,5 +109,5 @@ resource "aws_vpc_security_group_egress_rule" "data_egress" {
   security_group_id = aws_security_group.data.id
   cidr_ipv4         = "0.0.0.0/0"
   ip_protocol       = "-1"
-  description       = "Salida completa (instalación y backup)"
+  description       = "Salida completa (instalacion y backup)"
 }

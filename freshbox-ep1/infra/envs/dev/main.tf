@@ -86,8 +86,11 @@ module "compute_app" {
   tags                      = local.common_tags
 }
 
-# ── 7. Backup / DR ───────────────────────────────────────────────
+# ── 7. Backup / DR (opcional; el Learner Lab no permite crear IAM) ─
+# Deshabilitar con enable_backup = false si el entorno no permite iam:CreateRole.
 module "backup" {
+  count = var.enable_backup ? 1 : 0
+
   source = "../../modules/backup"
 
   project               = var.project
