@@ -34,7 +34,7 @@ jobs:
           aws-region: ${{ env.AWS_REGION }}
 
       - name: Deploy containers to EC2 instances
-        working-directory: Prueba1/freshbox-ep1/scripts
+        working-directory: freshbox-ep1/scripts
         env:
           COMMIT_SHA: ${{ inputs.commit_sha || github.sha }}
         run: ./deploy-ec2.sh

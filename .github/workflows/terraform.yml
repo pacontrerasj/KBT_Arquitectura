@@ -1,24 +1,31 @@
-name: Terraform Destroy
+name: Terraform Infrastructure
 
 on:
+  push:
+    branches: [main]
+    paths:
+      - "freshbox-ep1/infra/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "freshbox-ep1/infra/**"
   workflow_dispatch:
-    inputs:
-      confirm:
-        description: 'Escribe DESTROY para confirmar la eliminación de TODA la infraestructura'
-        required: true
-        default: ""
 
 env:
   AWS_REGION: us-east-1
 
+permissions:
+  id-token: write
+  contents: read
+  pull-requests: write
+
 jobs:
-  destroy:
-    name: Terraform Destroy
+  terraform:
+    name: Terraform Plan & Apply
     runs-on: ubuntu-latest
-    if: ${{ github.event.inputs.confirm == 'DESTROY' }}
     defaults:
       run:
-        working-directory: Prueba1/freshbox-ep1/infra/envs/dev
+        working-directory: freshbox-ep1/infra/envs/dev
 
     steps:
       - name: Checkout
@@ -40,13 +47,16 @@ jobs:
       - name: Terraform Init
         run: terraform init
 
-      - name: Terraform Destroy
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Plan
         run: |
-          terraform destroy -auto-approve \
+          terraform plan \
             -var="db_pass=${{ secrets.DB_PASS }}" \
             -var="db_root_pass=${{ secrets.DB_ROOT_PASS }}" \
-            -var="enable_backup=false"
+            -out=tfplan
 
-      - name: Confirm environment deletion
-        if: always()
-        run: echo "Destroy finalizado. Los recursos de la infraestructura fueron eliminados."
+      - name: Terraform Apply
+        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        run: terraform apply -auto-approve tfplan

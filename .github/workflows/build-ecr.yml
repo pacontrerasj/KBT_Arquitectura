@@ -4,7 +4,7 @@ on:
   push:
     branches: [main]
     paths:
-      - "Prueba1/desarrolloappEP1/desarrolloappEP1/**"
+      - "desarrolloappEP1/desarrolloappEP1/**"
   workflow_dispatch:
 
 env:
@@ -36,7 +36,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Build & push images
-        working-directory: Prueba1/desarrolloappEP1/desarrolloappEP1
+        working-directory: desarrolloappEP1/desarrolloappEP1
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           COMMIT_SHA: ${{ github.sha }}
