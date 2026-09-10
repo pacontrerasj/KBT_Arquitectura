@@ -22,12 +22,15 @@ module "security" {
 }
 
 # ── 3. ECR ────────────────────────────────────────────────────────
+# image_tag_mutability = MUTABLE permite que el pipeline sobrescriba `latest`
+# en cada build (necesario para deploys repetidos en un entorno académico).
 module "ecr" {
   source = "../../modules/ecr"
 
-  project          = var.project
-  repository_names = var.ecr_repository_names
-  tags             = local.common_tags
+  project               = var.project
+  repository_names      = var.ecr_repository_names
+  image_tag_mutability  = "MUTABLE"
+  tags                  = local.common_tags
 }
 
 # ── 4. ALB ────────────────────────────────────────────────────────
