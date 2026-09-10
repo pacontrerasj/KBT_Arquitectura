@@ -37,4 +37,4 @@ jobs:
         working-directory: freshbox-ep1/scripts
         env:
           COMMIT_SHA: ${{ inputs.commit_sha || github.sha }}
-        run: ./deploy-ec2.sh
+        run: bash deploy-ec2.sh
