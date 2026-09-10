@@ -5,6 +5,12 @@ on:
     workflows: ["Build & Push to ECR"]
     types: [completed]
     branches: [main]
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: "Commit SHA de las imágenes en ECR (deja vacío para usar el último push)"
+        required: false
+        default: ""
 
 env:
   AWS_REGION: us-east-1
@@ -13,7 +19,7 @@ jobs:
   deploy:
     name: Deploy via SSM
     runs-on: ubuntu-latest
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
 
     steps:
       - name: Checkout
@@ -30,5 +36,5 @@ jobs:
       - name: Deploy containers to EC2 instances
         working-directory: Prueba1/freshbox-ep1/scripts
         env:
-          COMMIT_SHA: ${{ github.sha }}
+          COMMIT_SHA: ${{ inputs.commit_sha || github.sha }}
         run: ./deploy-ec2.sh

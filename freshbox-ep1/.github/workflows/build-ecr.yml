@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "Prueba1/desarrolloappEP1/desarrolloappEP1/**"
+  workflow_dispatch:
 
 env:
   AWS_REGION: us-east-1
