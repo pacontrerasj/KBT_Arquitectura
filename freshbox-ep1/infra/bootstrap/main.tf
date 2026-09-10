@@ -10,8 +10,7 @@ terraform {
 }
 
 locals {
-  suffix     = substr(md5(var.bucket_name != "" ? var.bucket_name : "${var.project}-${var.environment}"), 0, 8)
-  bucket_name = var.bucket_name != "" ? var.bucket_name : "${var.project}-terraform-state-${local.suffix}"
+  bucket_name = var.bucket_name != "" ? var.bucket_name : "${var.project}-terraform-state"
 }
 
 resource "aws_s3_bucket" "state" {
@@ -54,7 +53,7 @@ resource "aws_s3_bucket_lifecycle_configuration" "state" {
     status = "Enabled"
 
     noncurrent_version_expiration {
-      noncurrent_days= 30
+      noncurrent_days = 30
     }
   }
 }

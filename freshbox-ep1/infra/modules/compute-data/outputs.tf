@@ -15,5 +15,5 @@ output "availability_zone" {
 
 output "security_group_id" {
   description = "ID del Security Group de la capa DATA."
-  value       = aws_instance.mysql.vpc_security_group_ids[0]
+  value       = one(aws_instance.mysql.vpc_security_group_ids)
 }

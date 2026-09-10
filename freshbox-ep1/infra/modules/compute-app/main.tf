@@ -47,14 +47,14 @@ resource "aws_launch_template" "app" {
   vpc_security_group_ids = [var.app_sg_id]
 
   user_data = base64encode(templatefile("${path.module}/user-data-app.sh", {
-    account_id          = local.account_id
-    region              = local.region
-    project             = var.project
-    db_host             = var.db_host
-    db_user             = var.db_user
-    db_pass             = var.db_pass
-    db_name             = var.db_name
-    ecr_repos           = local.repo_names
+    account_id = local.account_id
+    region     = local.region
+    project    = var.project
+    db_host    = var.db_host
+    db_user    = var.db_user
+    db_pass    = var.db_pass
+    db_name    = var.db_name
+    ecr_repos  = local.repo_names
   }))
 
   metadata_options {
@@ -99,10 +99,10 @@ locals {
 
 # Auto Scaling Group (min 2 / max 4)
 resource "aws_autoscaling_group" "app" {
-  name               = "${var.project}-app-asg"
-  min_size           = var.min_size
-  max_size           = var.max_size
-  desired_capacity   = var.desired_capacity
+  name                = "${var.project}-app-asg"
+  min_size            = var.min_size
+  max_size            = var.max_size
+  desired_capacity    = var.desired_capacity
   vpc_zone_identifier = var.app_subnet_ids
 
   target_group_arns = var.target_group_arns
@@ -141,10 +141,10 @@ resource "aws_autoscaling_policy" "cpu_scale_out" {
   count = var.enable_scaling ? 1 : 0
 
   name                   = "${var.project}-cpu-scale-out"
-  scaling_adjustment      = 1
-  adjustment_type         = "ChangeInCapacity"
-  cooldown                = 300
-  autoscaling_group_name  = aws_autoscaling_group.app.name
+  scaling_adjustment     = 1
+  adjustment_type        = "ChangeInCapacity"
+  cooldown               = 300
+  autoscaling_group_name = aws_autoscaling_group.app.name
 }
 
 resource "aws_cloudwatch_metric_alarm" "high_cpu" {

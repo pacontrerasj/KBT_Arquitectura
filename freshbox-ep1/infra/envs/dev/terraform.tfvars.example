@@ -1,0 +1,17 @@
+# ─── Ejemplo de terraform.tfvars ──────────────────────────────────
+# Copiar a terraform.tfvars y completar con los valores reales.
+# NUNCA commitear el archivo terraform.tfvars (está en .gitignore).
+
+project      = "freshbox"
+environment  = "dev"
+aws_region   = "us-east-1"
+
+# ── Credenciales de BD (sensibles, enviar vía GitHub Secrets) ────
+db_pass      = ""
+db_root_pass = ""
+
+# ── IAM ──────────────────────────────────────────────────────────
+iam_instance_profile_name = "LabInstanceProfile"
+
+# ── Opcional: Learner Lab no soporta EIP ────────────────────────
+assign_eip = false

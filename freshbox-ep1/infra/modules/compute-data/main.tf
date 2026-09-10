@@ -68,7 +68,7 @@ resource "aws_instance" "mysql" {
 
 # EIP opcional para la EC2 DATA (se documenta; puede no estar disponible en Learner Lab)
 resource "aws_eip" "mysql_primary" {
-  count = var.assign_eip ? 1 : 0
+  count  = var.assign_eip ? 1 : 0
   domain = "vpc"
 
   instance = aws_instance.mysql.id

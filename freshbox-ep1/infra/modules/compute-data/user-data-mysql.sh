@@ -21,7 +21,7 @@ systemctl start mysqld
 TEMP_PASS=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -1)
 
 # Configurar root y crear usuario/bd
-mysql --connect-expired-password -uroot -p"${TEMP_PASS}" <<SQL
+mysql --connect-expired-password -uroot -p"$${TEMP_PASS}" <<SQL
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${db_root_pass}';
 CREATE DATABASE IF NOT EXISTS ${db_name};
 CREATE USER IF NOT EXISTS '${db_user}'@'%' IDENTIFIED BY '${db_pass}';

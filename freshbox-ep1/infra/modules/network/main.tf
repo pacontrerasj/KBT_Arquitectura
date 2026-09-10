@@ -11,9 +11,9 @@ terraform {
 
 locals {
   # 6 subredes /24 dentro de una VPC /22
-  public_subnets  = { for i, az in var.azs : az => cidrsubnet(var.vpc_cidr, 8, i) }
-  app_subnets     = { for i, az in var.azs : az => cidrsubnet(var.vpc_cidr, 8, i + 2) }
-  data_subnets    = { for i, az in var.azs : az => cidrsubnet(var.vpc_cidr, 8, i + 4) }
+  public_subnets = { for i, az in var.azs : az => cidrsubnet(var.vpc_cidr, 8, i) }
+  app_subnets    = { for i, az in var.azs : az => cidrsubnet(var.vpc_cidr, 8, i + 2) }
+  data_subnets   = { for i, az in var.azs : az => cidrsubnet(var.vpc_cidr, 8, i + 4) }
 }
 
 resource "aws_vpc" "main" {

@@ -1,0 +1,57 @@
+name: Build & Push to ECR
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Prueba1/desarrolloappEP1/desarrolloappEP1/**"
+
+env:
+  AWS_REGION: us-east-1
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  build-and-push:
+    name: Build & Push Docker Images
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials (secrets)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build & push images
+        working-directory: Prueba1/desarrolloappEP1/desarrolloappEP1
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          COMMIT_SHA: ${{ github.sha }}
+        run: |
+          SERVICES=("frontend" "get-products" "create-product" "update-product" "delete-product")
+          CONTEXTS=("microservicioFrontend" "microserviciosBackend/get-products" "microserviciosBackend/create-product" "microserviciosBackend/update-product" "microserviciosBackend/delete-product")
+
+          for i in "${!SERVICES[@]}"; do
+            SVC="${SERVICES[$i]}"
+            CTX="${CONTEXTS[$i]}"
+            REPO="${ECR_REGISTRY}/freshbox-${SVC}"
+
+            echo "=== Building freshbox-${SVC} from ${CTX} ==="
+            docker build --platform linux/arm64 -t "${REPO}:${COMMIT_SHA}" -t "${REPO}:latest" "${CTX}"
+            docker push "${REPO}:${COMMIT_SHA}"
+            docker push "${REPO}:latest"
+          done
+
+          echo "=== All images pushed ==="
