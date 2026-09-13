@@ -21,14 +21,18 @@ systemctl start mysqld
 TEMP_PASS=$(grep 'temporary password' /var/log/mysqld.log | awk '{print $NF}' | tail -1)
 
 # Configurar root y crear usuario/bd
-# MySQL 8 valida passwords por defecto (MEDIUM, >= 8 chars; requiere may/min/num/especial).
-# Se relaja la política (LOW + longitud 7) para el contexto académico y los passwords configurados.
+# MySQL 8 exige resetear el password expirado como PRIMERA sentencia (ERROR 1820) y
+# valida con política MEDIUM por defecto (>= 8 chars, may/min/num/especial).
+# Estrategia: clave fuerte de transición que cumple MEDIUM -> relajar política
+# (LOW + longitud 7) -> recién entonces aplicar las claves del contexto académico.
 mysql --connect-expired-password -uroot -p"$${TEMP_PASS}" <<SQL
+ALTER USER 'root'@'localhost' IDENTIFIED BY 'Freshbox!2026';
 SET GLOBAL validate_password.policy = LOW;
 SET GLOBAL validate_password.length = 7;
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${db_root_pass}';
 CREATE DATABASE IF NOT EXISTS ${db_name};
 CREATE USER IF NOT EXISTS '${db_user}'@'%' IDENTIFIED BY '${db_pass}';
+ALTER USER '${db_user}'@'%' IDENTIFIED BY '${db_pass}';
 GRANT ALL PRIVILEGES ON ${db_name}.* TO '${db_user}'@'%';
 FLUSH PRIVILEGES;
 SQL
