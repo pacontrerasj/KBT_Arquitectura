@@ -53,7 +53,7 @@ desplegada en **AWS** con **IaC (Terraform)** y **CI/CD (GitHub Actions)**.
 .
 ├── .github/workflows/          # Pipelines de CI/CD + tests
 │   ├── build-ecr.yml           # Build + push de 5 imágenes a ECR (ARM64)
-│   ├── terraform.yml           # fmt/test/validate/plan/apply de la infra
+│   ├── terraform.yml           # fmt/test/validate/plan-check/apply de la infra
 │   ├── deploy.yml              # Deploy de contenedores en las EC2 (vía SSM)
 │   ├── destroy.yml             # Destrucción total (requiere confirmación)
 │   └── tests.yml               # Tests unitarios, sintaxis, Checkov y smoke/E2E
@@ -202,6 +202,12 @@ git push origin main
 
 En **Actions** verás 3 pipelines corriendo: `Build & Push to ECR` → `Deploy Containers to EC2`
 (+ `Terraform Infrastructure` si tocaste `freshbox-ep1/infra/**`, y `Tests de Calidad`).
+
+> **Después de un `destroy`** (o en una cuenta nueva) ejecuta en orden por **Run workflow**:
+> ① `Terraform Infrastructure` (aplica: crea VPC, ECR, ALB, ASG y las EC2;
+> por defecto aplica aunque sea manual, usa `apply=false` para solo planear) →
+> ② `Build & Push to ECR` → ③ `Deploy Containers to EC2` (se dispara al terminar el build).
+> No corras el build antes que el terraform: los repos ECR aún no existirían.
 
 Para deploy **manual** (sin cambiar código): Actions → **Deploy Containers to EC2** →
 **Run workflow** (deja el SHA vacío para usar el último build).

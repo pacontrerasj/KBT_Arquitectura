@@ -10,6 +10,11 @@ on:
     paths:
       - "freshbox-ep1/infra/**"
   workflow_dispatch:
+    inputs:
+      apply:
+        description: "Ejecutar terraform apply (false = solo plan)"
+        required: false
+        default: "true"
 
 env:
   AWS_REGION: us-east-1
@@ -67,5 +72,7 @@ jobs:
         run: python3 ../../../tests/terraform_plan_check.py tfplan
 
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: >-
+          (github.ref == 'refs/heads/main' && github.event_name == 'push')
+          || (github.event_name == 'workflow_dispatch' && github.event.inputs.apply == 'true')
         run: terraform apply -auto-approve tfplan
