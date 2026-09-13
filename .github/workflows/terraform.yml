@@ -44,11 +44,17 @@ jobs:
         with:
           terraform_version: "1.7"
 
+      - name: Terraform Fmt (formato)
+        run: terraform fmt -check -recursive
+
       - name: Terraform Init
         run: terraform init
 
       - name: Terraform Validate
         run: terraform validate
+
+      - name: Terraform Test (plan-only)
+        run: terraform test -verbose
 
       - name: Terraform Plan
         run: |
@@ -56,6 +62,9 @@ jobs:
             -var="db_pass=${{ secrets.DB_PASS }}" \
             -var="db_root_pass=${{ secrets.DB_ROOT_PASS }}" \
             -out=tfplan
+
+      - name: Aserciones del Plan (test de diseño)
+        run: python3 ../../tests/terraform_plan_check.py tfplan
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'

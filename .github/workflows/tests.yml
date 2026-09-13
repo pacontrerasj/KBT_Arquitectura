@@ -1,0 +1,87 @@
+name: Tests de Calidad
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "desarrolloappEP1/**"
+      - "freshbox-ep1/**"
+      - ".github/workflows/tests.yml"
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      alb_url:
+        description: "URL del ALB para el smoke/E2E (opcional para workflow_dispatch)"
+        required: false
+        default: ""
+
+jobs:
+  # ── Unit tests de los microservicios Node ─────────────────────────
+  unit-tests:
+    name: Unit tests (Node ${{ matrix.service }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        service: [get-products, create-product, update-product, delete-product]
+    defaults:
+      run:
+        working-directory: desarrolloappEP1/desarrolloappEP1/microserviciosBackend/${{ matrix.service }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Instalar dependencias
+        run: npm install --no-audit --no-fund
+      - name: Ejecutar tests (node:test)
+        run: npm test
+
+  # ── Verificación estática del contenido de código ─────────────────
+  static-check:
+    name: Sintaxis JS (node --check)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Verificar sintaxis de los microservicios
+        run: |
+          set -e
+          for f in desarrolloappEP1/desarrolloappEP1/microserviciosBackend/*/index.js; do
+            node --check "$f"
+            echo "OK $f"
+          done
+
+  # ── Seguridad IaC (Checkov, framework de referencia) ──────────────
+  checkov-iac:
+    name: Seguridad IaC (Checkov)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Instalar Checkov
+        run: pip install --quiet checkov
+      - name: Escanear infraestructura Terraform
+        run: |
+          checkov -d freshbox-ep1/infra --compact --soft-fail \
+            --skip-check CKV_AWS_126,CKV_AWS_79,CKV_AWS_21 \
+            -o cli
+
+  # ── Smoke / E2E contra el entorno desplegado ──────────────────────
+  smoke-e2e:
+    name: Smoke/E2E contra ALB
+    runs-on: ubuntu-latest
+    if: >-
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.alb_url != '')
+      || (vars.ALB_URL != '')
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Ejecutar smoke test CRUD
+        run: node freshbox-ep1/scripts/smoke-alb.mjs
+        env:
+          ALB_URL: ${{ (github.event.inputs.alb_url != '' && github.event.inputs.alb_url) || vars.ALB_URL || '' }}
