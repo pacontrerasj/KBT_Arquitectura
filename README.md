@@ -243,7 +243,7 @@ terraform test -verbose           # tests nativos (plan-only)
 
 # ── Aserciones del plan (diseño) ── (requiere credenciales AWS)
 terraform plan -out=tfplan -var="db_pass=alumno123" -var="db_root_pass=root123"
-python3 ../../tests/terraform_plan_check.py tfplan
+python3 ../../../tests/terraform_plan_check.py tfplan
 
 # ── Smoke/E2E contra el despliegue ──
 ALB_URL="http://<alb-dns>" node freshbox-ep1/scripts/smoke-alb.mjs

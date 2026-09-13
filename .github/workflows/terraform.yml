@@ -64,7 +64,7 @@ jobs:
             -out=tfplan
 
       - name: Aserciones del Plan (test de diseño)
-        run: python3 ../../tests/terraform_plan_check.py tfplan
+        run: python3 ../../../tests/terraform_plan_check.py tfplan
 
       - name: Terraform Apply
         if: github.ref == 'refs/heads/main' && github.event_name == 'push'
